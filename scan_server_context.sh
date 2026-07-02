@@ -87,7 +87,7 @@ cmd "Nginx" "which nginx || true; nginx -v || true; systemctl status nginx --no-
 
 section "3. Ports and Listening Services"
 cmd "Listening TCP ports" "ss -lntp || netstat -lntp || true"
-cmd "Common ports quick check" "for p in 80 443 3000 3001 3010 5000 5173 8000 8080; do echo \"--- port $p ---\"; ss -lntp 2>/dev/null | grep \":$p \" || true; done"
+cmd "Common ports quick check" "for p in 80 443 3000 3001 3010 5000 5173 8000 8080; do echo \"--- port \$p ---\"; ss -lntp 2>/dev/null | grep \":\$p \" || true; done"
 
 section "4. Common Project Directories"
 cmd "/opt directory" "ls -la /opt || true"
