@@ -17,6 +17,8 @@ fi
 chmod +x "$APP_DIR/scan_server_context.sh"
 
 touch "$PROFILE_FILE"
+BACKUP_FILE="$PROFILE_FILE.server-context-scanner.bak.$(date '+%Y%m%d%H%M%S')"
+cp "$PROFILE_FILE" "$BACKUP_FILE"
 
 sed -i '/^alias scan-server=/d' "$PROFILE_FILE"
 
@@ -42,7 +44,8 @@ awk '
     }
   }
 ' "$PROFILE_FILE" > "$TMP_PROFILE"
-mv "$TMP_PROFILE" "$PROFILE_FILE"
+cat "$TMP_PROFILE" > "$PROFILE_FILE"
+rm -f "$TMP_PROFILE"
 
 {
   echo ""
@@ -61,6 +64,7 @@ mv "$TMP_PROFILE" "$PROFILE_FILE"
 } >> "$PROFILE_FILE"
 
 echo "Installed scan-server function to $PROFILE_FILE"
+echo "Backup created at $BACKUP_FILE"
 
 echo ""
 echo "Installed Server Context Scanner to:"

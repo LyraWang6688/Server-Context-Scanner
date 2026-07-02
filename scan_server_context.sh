@@ -181,8 +181,8 @@ write_summary_runtime() {
   write "- Python: $(short_value "python3 --version || echo not-found")"
   write "- pip: $(short_value "pip3 --version | awk '{print \$1, \$2}' || echo not-found")"
   write "- PM2: $(short_value "command -v pm2 >/dev/null 2>&1 && pm2 -v || echo not-found")"
-  write "- Docker: $(short_value "docker --version || echo not-found")"
-  write "- Docker Compose: $(short_value "docker compose version || echo not-found")"
+  write "- Docker: $(short_value "command -v docker >/dev/null 2>&1 && docker --version || echo not-found")"
+  write "- Docker Compose: $(short_value "command -v docker >/dev/null 2>&1 && docker compose version || echo not-found")"
   write "- systemd: $(short_value "systemctl --version 2>/dev/null | head -1 || echo not-found")"
   write "- Nginx: $(short_value "command -v nginx >/dev/null 2>&1 && nginx -v 2>&1 || echo not-found")"
   write "- Nginx active: $(short_value "command -v nginx >/dev/null 2>&1 && systemctl is-active nginx 2>/dev/null || echo unknown")"
@@ -198,7 +198,7 @@ write_summary_ports() {
 write_summary_services() {
   section "4. Running Services"
   cmd "PM2 apps" "if ! command -v pm2 >/dev/null 2>&1; then echo 'PM2 not found.'; elif ! command -v node >/dev/null 2>&1; then pm2 status || true; else pm2 jlist 2>/dev/null | node -e \"let s=''; process.stdin.on('data',d=>s+=d); process.stdin.on('end',()=>{try{const apps=JSON.parse(s); if(!apps.length){console.log('No PM2 apps.'); return;} for (const a of apps){console.log([a.pm_id,a.name,a.pm2_env?.status,'pid='+a.pid,'restart='+a.pm2_env?.restart_time].join(' | '));}}catch(e){console.log('Cannot parse pm2 jlist');}})\" || pm2 status || true; fi"
-  cmd "Docker containers" "docker ps -a --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}\t{{.Image}}' || true"
+  cmd "Docker containers" "if ! command -v docker >/dev/null 2>&1; then echo 'Docker not found.'; else docker ps -a --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}\t{{.Image}}' || true; fi"
   cmd "Nginx routes" "if ! command -v nginx >/dev/null 2>&1; then echo 'Nginx not found.'; else grep -R \"server_name\\|listen\\|proxy_pass\" /etc/nginx/sites-enabled /etc/nginx/conf.d 2>/dev/null | sed 's/^[[:space:]]*//' || true; fi"
 }
 

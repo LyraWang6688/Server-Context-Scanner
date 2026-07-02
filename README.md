@@ -59,6 +59,19 @@ source ~/.bashrc
 
 安装脚本只会管理这个标记区块和旧版 `scan-server` alias，不会主动修改其他 shell 配置。重新运行 `install.sh` 会刷新这个快捷函数。
 
+每次运行 `install.sh` 前都会自动备份当前 `~/.bashrc`：
+
+```text
+~/.bashrc.server-context-scanner.bak.YYYYMMDDHHMMSS
+```
+
+如果需要恢复，可以执行：
+
+```bash
+cp ~/.bashrc.server-context-scanner.bak.YYYYMMDDHHMMSS ~/.bashrc
+source ~/.bashrc
+```
+
 如果你不想修改 `~/.bashrc`，可以不运行 `install.sh`，只执行：
 
 ```bash
