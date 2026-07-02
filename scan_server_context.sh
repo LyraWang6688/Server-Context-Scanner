@@ -226,7 +226,7 @@ write_project_summary() {
     fi
   fi
 
-  env_files="$( (cd -- "$dir" && find . -maxdepth 2 -name '.env*' -type f -print 2>/dev/null | sed 's#^./##' | paste -sd ', ' -) || true )"
+  env_files="$( (cd -- "$dir" && find . -maxdepth 2 -name '.env*' -type f -print 2>/dev/null | sed 's#^./##' | awk 'BEGIN { first=1 } { if (!first) printf ", "; printf "%s", $0; first=0 } END { if (!first) printf "\n" }') || true )"
   [ -n "$env_files" ] || env_files="none"
 
   write "### Project: \`$dir\`"
