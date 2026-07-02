@@ -215,9 +215,9 @@ server {
 - 端口占用：常见端口快速检查。
 - 运行服务：PM2 应用、Docker 容器、Nginx 路由摘要。
 - 疑似项目识别：项目路径、Git 状态、关键文件、运行方式线索。
-- package.json 摘要：`name`、`version`、`scripts`、依赖数量、框架线索。
+- package.json 摘要：`name`、`version`、关键 `scripts`、依赖数量、框架线索。
 - 敏感文件：只列 `.env*` 文件名，不读取内容。
-- Nginx 入口：`listen`、`server_name`、`proxy_pass`。
+- Nginx 入口：精简为 `server_name -> proxy_pass`。
 - 快速风险信号：磁盘、内存、端口冲突、Nginx 配置注意事项。
 - AI 阅读说明：提醒 AI 严格基于报告证据分析。
 - 为减少 AI 上下文占用，默认精简报告只展示命令标题和输出，不展示完整执行命令。
@@ -226,7 +226,7 @@ server {
 
 - 完整执行命令，便于审计和排障复现。
 - 每个项目的完整 `ls -la`。
-- package.json 的完整 dependencies / devDependencies 名称。
+- package.json 的完整 scripts、dependencies / devDependencies 名称。
 - 完整 `ss -lntp` 监听端口表。
 - Git 最近 5 条提交。
 - 详细 `systemctl status nginx --no-pager`。
