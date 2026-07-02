@@ -19,14 +19,43 @@ chmod +x "$APP_DIR/scan_server_context.sh"
 touch "$PROFILE_FILE"
 
 sed -i '/^alias scan-server=/d' "$PROFILE_FILE"
-sed -i '/^# Server Context Scanner$/d' "$PROFILE_FILE"
-sed -i '/^scan-server() {$/,/^# End Server Context Scanner$/d' "$PROFILE_FILE"
+
+TMP_PROFILE="$(mktemp)"
+awk '
+  $0 == "# Begin Server Context Scanner" || $0 == "# Server Context Scanner" {
+    in_block = 1
+    buffer = $0 ORS
+    next
+  }
+  in_block {
+    buffer = buffer $0 ORS
+    if ($0 == "# End Server Context Scanner") {
+      in_block = 0
+      buffer = ""
+    }
+    next
+  }
+  { print }
+  END {
+    if (in_block) {
+      printf "%s", buffer
+    }
+  }
+' "$PROFILE_FILE" > "$TMP_PROFILE"
+mv "$TMP_PROFILE" "$PROFILE_FILE"
 
 {
   echo ""
-  echo "# Server Context Scanner"
+  echo "# Begin Server Context Scanner"
   echo "scan-server() {"
-  echo "  \"$APP_DIR/scan_server_context.sh\" \"\$@\" && cat \"$APP_DIR/reports/server_context_latest.md\""
+  echo "  case \"\${1:-}\" in"
+  echo "    --help|-h)"
+  echo "      \"$APP_DIR/scan_server_context.sh\" \"\$@\""
+  echo "      ;;"
+  echo "    *)"
+  echo "      \"$APP_DIR/scan_server_context.sh\" \"\$@\" && cat \"$APP_DIR/reports/server_context_latest.md\""
+  echo "      ;;"
+  echo "  esac"
   echo "}"
   echo "# End Server Context Scanner"
 } >> "$PROFILE_FILE"

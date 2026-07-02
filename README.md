@@ -50,7 +50,16 @@ chmod +x install.sh
 source ~/.bashrc
 ```
 
-如果你不想安装快捷命令，也可以只执行：
+`install.sh` 会更新 `~/.bashrc` 中由以下标记包裹的快捷函数区块：
+
+```bash
+# Begin Server Context Scanner
+# End Server Context Scanner
+```
+
+安装脚本只会管理这个标记区块和旧版 `scan-server` alias，不会主动修改其他 shell 配置。重新运行 `install.sh` 会刷新这个快捷函数。
+
+如果你不想修改 `~/.bashrc`，可以不运行 `install.sh`，只执行：
 
 ```bash
 chmod +x ~/server-context-scanner/scan_server_context.sh
