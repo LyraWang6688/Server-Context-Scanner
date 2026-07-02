@@ -191,7 +191,6 @@ write_summary_runtime() {
 
 write_summary_ports() {
   section "3. Ports"
-  cmd "Listening TCP ports" "ss -lntp || netstat -lntp || true"
   cmd "Common ports quick check" "for p in 80 443 3000 3001 3010 3011 5000 5173 8000 8080; do if ss -lntp 2>/dev/null | grep -q \":\$p \"; then echo \"\$p: occupied\"; ss -lntp 2>/dev/null | grep \":\$p \" | head -3; else echo \"\$p: free_or_not_listening\"; fi; done"
 }
 

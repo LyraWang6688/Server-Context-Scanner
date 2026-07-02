@@ -127,7 +127,7 @@ cat ~/server-context-scanner/reports/server_context_latest.md
 
 - 服务器基础信息：用户、主机名、时间、系统、CPU、内存、磁盘。
 - 运行环境：Node、npm、npx、Git、Python、PM2、Docker、systemd、Nginx。
-- 端口占用：监听 TCP 端口和常见端口快速检查。
+- 端口占用：常见端口快速检查。
 - 运行服务：PM2 应用、Docker 容器、Nginx 路由摘要。
 - 疑似项目识别：项目路径、Git 状态、关键文件、运行方式线索。
 - package.json 摘要：`name`、`version`、`scripts`、依赖数量、框架线索。
@@ -140,6 +140,7 @@ cat ~/server-context-scanner/reports/server_context_latest.md
 
 - 每个项目的完整 `ls -la`。
 - package.json 的完整 dependencies / devDependencies 名称。
+- 完整 `ss -lntp` 监听端口表。
 - Git 最近 5 条提交。
 - 详细 `systemctl status nginx --no-pager`。
 - Node / PM2 / Docker 相关进程详情。
