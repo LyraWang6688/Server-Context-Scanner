@@ -36,6 +36,28 @@ cmd() {
   write ""
 }
 
+project_cmd() {
+  local title="$1"
+  local dir="$2"
+  local command="$3"
+  local display_dir
+
+  display_dir="$(printf '%q' "$dir")"
+
+  write "### $title"
+  write ""
+  write '```bash'
+  write "$ cd -- $display_dir && $command"
+  write '```'
+  write ""
+  write '```text'
+  (
+    cd -- "$dir" && bash -lc "$command"
+  ) >> "$REPORT_FILE" 2>&1 || true
+  write '```'
+  write ""
+}
+
 safe_project_dirs() {
   find /opt "$HOME" \
     -maxdepth 4 \
@@ -53,8 +75,8 @@ safe_project_dirs() {
     -not -path "*/reports/*" \
     -not -path "*/.npm/*" \
     -not -path "*/.local/*" \
-    2>/dev/null \
-    | xargs -r dirname \
+    -print0 2>/dev/null \
+    | xargs -0 -r dirname -- \
     | sort -u
 }
 
@@ -107,32 +129,32 @@ else
     write "### Project: \`$dir\`"
     write ""
 
-    cmd "Files in $dir" "cd '$dir' && ls -la"
+    project_cmd "Files in $dir" "$dir" "ls -la"
 
     if [ -d "$dir/.git" ]; then
-      cmd "Git status for $dir" "cd '$dir' && git remote -v || true; git branch --show-current || true; git log --oneline -5 || true; git status --short || true"
+      project_cmd "Git status for $dir" "$dir" "git remote -v || true; git branch --show-current || true; git log --oneline -5 || true; git status --short || true"
     else
       write "- Git: No .git directory found."
       write ""
     fi
 
     if [ -f "$dir/package.json" ]; then
-      cmd "package.json summary for $dir" "cd '$dir' && node -e \"const p=require('./package.json'); console.log(JSON.stringify({name:p.name, version:p.version, scripts:p.scripts, dependencies:Object.keys(p.dependencies||{}), devDependencies:Object.keys(p.devDependencies||{})}, null, 2))\" 2>/dev/null || echo 'Cannot parse package.json'"
+      project_cmd "package.json summary for $dir" "$dir" "node -e \"const p=require('./package.json'); console.log(JSON.stringify({name:p.name, version:p.version, scripts:p.scripts, dependencies:Object.keys(p.dependencies||{}), devDependencies:Object.keys(p.devDependencies||{})}, null, 2))\" 2>/dev/null || echo 'Cannot parse package.json'"
     fi
 
     if [ -f "$dir/docker-compose.yml" ] || [ -f "$dir/docker-compose.yaml" ] || [ -f "$dir/compose.yml" ] || [ -f "$dir/compose.yaml" ]; then
-      cmd "Docker compose status for $dir" "cd '$dir' && docker compose ps || true"
+      project_cmd "Docker compose status for $dir" "$dir" "docker compose ps || true"
     fi
 
     if [ -f "$dir/Dockerfile" ]; then
-      cmd "Dockerfile detected for $dir" "cd '$dir' && ls -la Dockerfile"
+      project_cmd "Dockerfile detected for $dir" "$dir" "ls -la Dockerfile"
     fi
 
     if [ -f "$dir/ecosystem.config.js" ]; then
-      cmd "PM2 ecosystem file detected for $dir" "cd '$dir' && ls -la ecosystem.config.js"
+      project_cmd "PM2 ecosystem file detected for $dir" "$dir" "ls -la ecosystem.config.js"
     fi
 
-    cmd "Env files names only for $dir" "cd '$dir' && find . -maxdepth 2 -name '.env*' -type f -print | sed 's#^./##' || true"
+    project_cmd "Env files names only for $dir" "$dir" "find . -maxdepth 2 -name '.env*' -type f -print | sed 's#^./##' || true"
   done <<< "$PROJECT_DIRS"
 fi
 
