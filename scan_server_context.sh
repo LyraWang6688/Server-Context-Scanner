@@ -198,16 +198,63 @@ write_summary_ports() {
   cmd "Common ports quick check" "for p in 80 443 3000 3001 3010 3011 5000 5173 8000 8080; do if ss -lntp 2>/dev/null | grep -q \":\$p \"; then echo \"\$p: occupied\"; ss -lntp 2>/dev/null | grep \":\$p \" | head -3; else echo \"\$p: free_or_not_listening\"; fi; done"
 }
 
+write_nginx_routes_summary() {
+  local routes
+
+  write "### Nginx routes"
+  write ""
+  write '```text'
+
+  if ! command -v nginx >/dev/null 2>&1; then
+    routes="Nginx not found."
+  else
+    routes="$(
+      find /etc/nginx/sites-enabled /etc/nginx/conf.d -type f -print 2>/dev/null | sort | while IFS= read -r file; do
+        [ -f "$file" ] || continue
+        awk -v file="$file" '
+          /^[[:space:]]*#/ { next }
+          {
+            line=$0
+            sub(/[[:space:]]+#.*/, "", line)
+          }
+          line ~ /^[[:space:]]*server[[:space:]]*\{/ {
+            name=""
+            next
+          }
+          line ~ /^[[:space:]]*server_name[[:space:]]+/ {
+            sub(/^[[:space:]]*server_name[[:space:]]+/, "", line)
+            sub(/[[:space:]]*;.*/, "", line)
+            name=line
+            next
+          }
+          line ~ /^[[:space:]]*proxy_pass[[:space:]]+/ {
+            route=line
+            sub(/^[[:space:]]*proxy_pass[[:space:]]+/, "", route)
+            sub(/[[:space:]]*;.*/, "", route)
+            if (name != "") print name " -> " route
+            else print "(unknown in " file ") -> " route
+          }
+        ' "$file"
+      done
+    )"
+    [ -n "$routes" ] || routes="No Nginx proxy routes found."
+  fi
+
+  printf '%s\n' "$routes" >> "$REPORT_FILE"
+  write '```'
+  write ""
+}
+
 write_summary_services() {
   section "4. Running Services"
   cmd "PM2 apps" "if ! command -v pm2 >/dev/null 2>&1; then echo 'PM2 not found.'; elif ! command -v python3 >/dev/null 2>&1; then echo 'Python not found; cannot parse pm2 jlist.'; else pm2 jlist 2>/dev/null | python3 -c 'import json, sys; apps=json.loads(sys.stdin.read() or \"[]\"); print(\"No PM2 apps.\") if not apps else [print(\" | \".join([str(app.get(\"pm_id\", \"\")), str(app.get(\"name\", \"\")), str((app.get(\"pm2_env\") or {}).get(\"status\", \"\")), \"pid=\" + str(app.get(\"pid\", \"\")), \"restart=\" + str((app.get(\"pm2_env\") or {}).get(\"restart_time\", \"\"))])) for app in apps]' 2>/dev/null || echo 'Cannot parse pm2 jlist'; fi"
   cmd "Docker containers" "if ! command -v docker >/dev/null 2>&1; then echo 'Docker not found.'; else output=\"\$(docker ps -a --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}\t{{.Image}}' 2>&1)\" && printf '%s\n' \"\$output\" || { echo 'Docker command failed. Current process may not have permission to access the Docker daemon.'; printf '%s\n' \"\$output\"; }; fi"
-  cmd "Nginx routes" "if ! command -v nginx >/dev/null 2>&1; then echo 'Nginx not found.'; else grep -R \"server_name\\|proxy_pass\" /etc/nginx/sites-enabled /etc/nginx/conf.d 2>/dev/null | awk '/server_name/ { line=\$0; sub(/^[^:]*:[[:space:]]*/, \"\", line); gsub(/;/, \"\", line); sub(/server_name[[:space:]]+/, \"\", line); name=line } /proxy_pass/ { line=\$0; sub(/^[^:]*:[[:space:]]*/, \"\", line); gsub(/;/, \"\", line); sub(/proxy_pass[[:space:]]+/, \"\", line); if (name != \"\") print name \" -> \" line; else print \"(unknown) -> \" line }' || true; fi"
+  write_nginx_routes_summary
 }
 
 write_package_summary() {
   local dir="$1"
-  project_cmd "package.json compact summary" "$dir" "python3 -c 'import json; p=json.load(open(\"package.json\", encoding=\"utf-8\")); deps=p.get(\"dependencies\") or {}; dev=p.get(\"devDependencies\") or {}; all_deps={**deps, **dev}; keys=[\"next\",\"react\",\"express\",\"vite\",\"vue\",\"nuxt\",\"koa\",\"fastify\",\"nestjs\",\"drizzle-orm\",\"prisma\",\"pg\",\"mysql2\",\"mongoose\",\"typescript\"]; keep={\"dev\",\"start\",\"build\",\"test\",\"lint\",\"ts-check\"}; raw_scripts=p.get(\"scripts\") or {}; scripts={k:v for k,v in raw_scripts.items() if k in keep or k.startswith(\"db:\")}; summary={\"name\":p.get(\"name\"),\"version\":p.get(\"version\"),\"scripts\":scripts,\"dependenciesCount\":len(deps),\"devDependenciesCount\":len(dev),\"frameworkHints\":[k for k in keys if k in all_deps]}; print(json.dumps(summary, ensure_ascii=False, indent=2))' 2>/dev/null || echo 'Cannot parse package.json'"
+  project_cmd "package.json compact summary" "$dir" "python3 -c 'import json; p=json.load(open(\"package.json\", encoding=\"utf-8\")); deps=p.get(\"dependencies\") or {}; dev=p.get(\"devDependencies\") or {}; all_deps={**deps, **dev}; keys=[\"next\",\"react\",\"express\",\"vite\",\"vue\",\"nuxt\",\"koa\",\"fastify\",\"nestjs\",\"drizzle-orm\",\"prisma\",\"pg\",\"mysql2\",\"mongoose\",\"typescript\"]; exact={\"dev\",\"start\",\"build\",\"test\",\"lint\",\"ts-check\",\"serve\",\"prod\",\"production\",\"deploy\",\"worker\",\"preview\"}; tokens=[\"serve\",\"prod\",\"deploy\",\"worker\",\"preview\"]; raw_scripts=p.get(\"scripts\") or {}; scripts={k:v for k,v in raw_scripts.items() if k in exact or k.startswith((\"db:\",\"pm2:\")) or any(t in k.lower() for t in tokens)}; summary={\"name\":p.get(\"name\"),\"version\":p.get(\"version\"),\"scripts\":scripts,\"hiddenScriptsCount\":max(len(raw_scripts)-len(scripts),0),\"dependenciesCount\":len(deps),\"devDependenciesCount\":len(dev),\"frameworkHints\":[k for k in keys if k in all_deps]}; print(json.dumps(summary, ensure_ascii=False, indent=2))' 2>/dev/null || echo 'Cannot parse package.json'"
 }
 
 write_project_summary() {
