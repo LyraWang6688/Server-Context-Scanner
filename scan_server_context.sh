@@ -196,14 +196,14 @@ write_summary_ports() {
 
 write_summary_services() {
   section "4. Running Services"
-  cmd "PM2 apps" "if ! command -v pm2 >/dev/null 2>&1; then echo 'PM2 not found.'; elif ! command -v node >/dev/null 2>&1; then pm2 status || true; else pm2 jlist 2>/dev/null | node -e \"let s=''; process.stdin.on('data',d=>s+=d); process.stdin.on('end',()=>{try{const apps=JSON.parse(s); if(!apps.length){console.log('No PM2 apps.'); return;} for (const a of apps){console.log([a.pm_id,a.name,a.pm2_env?.status,'pid='+a.pid,'restart='+a.pm2_env?.restart_time].join(' | '));}}catch(e){console.log('Cannot parse pm2 jlist');}})\" || pm2 status || true; fi"
-  cmd "Docker containers" "if ! command -v docker >/dev/null 2>&1; then echo 'Docker not found.'; else docker ps -a --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}\t{{.Image}}' || true; fi"
+  cmd "PM2 apps" "if ! command -v pm2 >/dev/null 2>&1; then echo 'PM2 not found.'; elif ! command -v python3 >/dev/null 2>&1; then echo 'Python not found; cannot parse pm2 jlist.'; else pm2 jlist 2>/dev/null | python3 -c 'import json, sys; apps=json.loads(sys.stdin.read() or \"[]\"); print(\"No PM2 apps.\") if not apps else [print(\" | \".join([str(app.get(\"pm_id\", \"\")), str(app.get(\"name\", \"\")), str((app.get(\"pm2_env\") or {}).get(\"status\", \"\")), \"pid=\" + str(app.get(\"pid\", \"\")), \"restart=\" + str((app.get(\"pm2_env\") or {}).get(\"restart_time\", \"\"))])) for app in apps]' 2>/dev/null || echo 'Cannot parse pm2 jlist'; fi"
+  cmd "Docker containers" "if ! command -v docker >/dev/null 2>&1; then echo 'Docker not found.'; else output=\"\$(docker ps -a --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}\t{{.Image}}' 2>&1)\" && printf '%s\n' \"\$output\" || { echo 'Docker command failed. Current process may not have permission to access the Docker daemon.'; printf '%s\n' \"\$output\"; }; fi"
   cmd "Nginx routes" "if ! command -v nginx >/dev/null 2>&1; then echo 'Nginx not found.'; else grep -R \"server_name\\|listen\\|proxy_pass\" /etc/nginx/sites-enabled /etc/nginx/conf.d 2>/dev/null | sed 's/^[[:space:]]*//' || true; fi"
 }
 
 write_package_summary() {
   local dir="$1"
-  project_cmd "package.json compact summary" "$dir" "node -e \"const p=require('./package.json'); const deps=p.dependencies||{}; const dev=p.devDependencies||{}; const all={...deps,...dev}; const hints=['next','react','express','vite','vue','nuxt','koa','fastify','nestjs','drizzle-orm','prisma','pg','mysql2','mongoose','typescript'].filter(k=>all[k]); console.log(JSON.stringify({name:p.name, version:p.version, scripts:p.scripts||{}, dependenciesCount:Object.keys(deps).length, devDependenciesCount:Object.keys(dev).length, frameworkHints:hints}, null, 2))\" 2>/dev/null || echo 'Cannot parse package.json'"
+  project_cmd "package.json compact summary" "$dir" "python3 -c 'import json; p=json.load(open(\"package.json\", encoding=\"utf-8\")); deps=p.get(\"dependencies\") or {}; dev=p.get(\"devDependencies\") or {}; all_deps={**deps, **dev}; keys=[\"next\",\"react\",\"express\",\"vite\",\"vue\",\"nuxt\",\"koa\",\"fastify\",\"nestjs\",\"drizzle-orm\",\"prisma\",\"pg\",\"mysql2\",\"mongoose\",\"typescript\"]; summary={\"name\":p.get(\"name\"),\"version\":p.get(\"version\"),\"scripts\":p.get(\"scripts\") or {},\"dependenciesCount\":len(deps),\"devDependenciesCount\":len(dev),\"frameworkHints\":[k for k in keys if k in all_deps]}; print(json.dumps(summary, ensure_ascii=False, indent=2))' 2>/dev/null || echo 'Cannot parse package.json'"
 }
 
 write_project_summary() {
@@ -351,7 +351,7 @@ scan_full() {
       fi
 
       if [ -f "$dir/package.json" ]; then
-        project_cmd "package.json full summary for $dir" "$dir" "node -e \"const p=require('./package.json'); console.log(JSON.stringify({name:p.name, version:p.version, scripts:p.scripts, dependencies:Object.keys(p.dependencies||{}), devDependencies:Object.keys(p.devDependencies||{})}, null, 2))\" 2>/dev/null || echo 'Cannot parse package.json'"
+        project_cmd "package.json full summary for $dir" "$dir" "python3 -c 'import json; p=json.load(open(\"package.json\", encoding=\"utf-8\")); deps=p.get(\"dependencies\") or {}; dev=p.get(\"devDependencies\") or {}; summary={\"name\":p.get(\"name\"),\"version\":p.get(\"version\"),\"scripts\":p.get(\"scripts\"),\"dependencies\":list(deps.keys()),\"devDependencies\":list(dev.keys())}; print(json.dumps(summary, ensure_ascii=False, indent=2))' 2>/dev/null || echo 'Cannot parse package.json'"
       fi
 
       if [ -f "$dir/docker-compose.yml" ] || [ -f "$dir/docker-compose.yaml" ] || [ -f "$dir/compose.yml" ] || [ -f "$dir/compose.yaml" ]; then
