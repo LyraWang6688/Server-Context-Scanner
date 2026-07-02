@@ -39,6 +39,12 @@ server-context-scanner/
 └── README.md
 ```
 
+## 运行环境
+
+- Bash：执行只读扫描脚本。
+- Python 3：解析 PM2 JSON 和 `package.json` 摘要；Ubuntu 22.04 默认已内置。
+- 可选工具：Git、Node、npm、PM2、Docker、Nginx、systemd。脚本会按实际安装情况探测，未安装时只在报告中标记为 `not-found` 或对应提示。
+
 ## 安装
 
 把整个 `server-context-scanner` 目录复制到服务器后，执行：
@@ -214,9 +220,11 @@ server {
 - Nginx 入口：`listen`、`server_name`、`proxy_pass`。
 - 快速风险信号：磁盘、内存、端口冲突、Nginx 配置注意事项。
 - AI 阅读说明：提醒 AI 严格基于报告证据分析。
+- 为减少 AI 上下文占用，默认精简报告只展示命令标题和输出，不展示完整执行命令。
 
 完整诊断报告 `scan-server --full` 会额外包含：
 
+- 完整执行命令，便于审计和排障复现。
 - 每个项目的完整 `ls -la`。
 - package.json 的完整 dependencies / devDependencies 名称。
 - 完整 `ss -lntp` 监听端口表。

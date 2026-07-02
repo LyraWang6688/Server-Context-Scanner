@@ -58,10 +58,12 @@ cmd() {
 
   write "### $title"
   write ""
-  write '```bash'
-  write "$ $command"
-  write '```'
-  write ""
+  if [ "$MODE" = "full" ]; then
+    write '```bash'
+    write "$ $command"
+    write '```'
+    write ""
+  fi
   write '```text'
   bash -lc "$command" >> "$REPORT_FILE" 2>&1 || true
   write '```'
@@ -78,10 +80,12 @@ project_cmd() {
 
   write "### $title"
   write ""
-  write '```bash'
-  write "$ cd -- $display_dir && $command"
-  write '```'
-  write ""
+  if [ "$MODE" = "full" ]; then
+    write '```bash'
+    write "$ cd -- $display_dir && $command"
+    write '```'
+    write ""
+  fi
   write '```text'
   (
     cd -- "$dir" && bash -lc "$command"
