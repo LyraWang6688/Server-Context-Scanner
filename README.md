@@ -4,6 +4,8 @@ Server Context Scanner 是一个人为触发的服务器上下文采集器。
 
 它的目标不是自动部署，也不是修改服务器，而是通过一个只读脚本生成一份 AI 可直接阅读的服务器状态报告。
 
+默认报告是精简版，适合直接复制给 AI；需要排障时可以使用 `--full` 生成完整诊断报告。
+
 ## 适用场景
 
 - 新增项目前，让 AI 了解服务器现状。
@@ -48,7 +50,7 @@ chmod +x install.sh
 source ~/.bashrc
 ```
 
-如果你不想安装 alias，也可以只执行：
+如果你不想安装快捷命令，也可以只执行：
 
 ```bash
 chmod +x ~/server-context-scanner/scan_server_context.sh
@@ -56,7 +58,7 @@ chmod +x ~/server-context-scanner/scan_server_context.sh
 
 ## 使用
 
-推荐方式：
+推荐方式，生成精简版 AI 上下文报告：
 
 ```bash
 scan-server
@@ -71,27 +73,55 @@ scan-server
 4. 把最新报告打印到终端，方便复制给 AI
 ```
 
-不使用 alias 时：
+需要完整诊断报告时：
+
+```bash
+scan-server --full
+```
+
+查看帮助：
+
+```bash
+scan-server --help
+```
+
+不使用快捷命令时：
 
 ```bash
 ~/server-context-scanner/scan_server_context.sh
 cat ~/server-context-scanner/reports/server_context_latest.md
 ```
 
+不使用 shell function 时，也可以直接传参：
+
+```bash
+~/server-context-scanner/scan_server_context.sh --full
+cat ~/server-context-scanner/reports/server_context_latest.md
+```
+
 ## 报告内容
 
-报告会包含：
+默认精简报告会包含：
 
 - 服务器基础信息：用户、主机名、时间、系统、CPU、内存、磁盘。
 - 运行环境：Node、npm、npx、Git、Python、PM2、Docker、systemd、Nginx。
 - 端口占用：监听 TCP 端口和常见端口快速检查。
-- 常见项目目录：`/opt` 和用户主目录。
-- 疑似项目识别：`package.json`、`Dockerfile`、`docker-compose.yml`、`compose.yml`、`ecosystem.config.js`。
-- Git 状态：远程仓库、当前分支、最近提交、未提交变更摘要。
+- 运行服务：PM2 应用、Docker 容器、Nginx 路由摘要。
+- 疑似项目识别：项目路径、Git 状态、关键文件、运行方式线索。
+- package.json 摘要：`name`、`version`、`scripts`、依赖数量、框架线索。
+- 敏感文件：只列 `.env*` 文件名，不读取内容。
 - Nginx 入口：`listen`、`server_name`、`proxy_pass`。
-- 进程摘要：Node、npm、PM2、Next、Vite、Docker 相关进程。
-- 环境变量名：只列名字，不列值。
+- 快速风险信号：磁盘、内存、端口冲突、Nginx 配置注意事项。
 - AI 阅读说明：提醒 AI 严格基于报告证据分析。
+
+完整诊断报告 `scan-server --full` 会额外包含：
+
+- 每个项目的完整 `ls -la`。
+- package.json 的完整 dependencies / devDependencies 名称。
+- Git 最近 5 条提交。
+- 详细 `systemctl status nginx --no-pager`。
+- Node / PM2 / Docker 相关进程详情。
+- 环境变量名列表，不输出变量值。
 
 ## 推荐工作流
 
@@ -102,6 +132,12 @@ cat ~/server-context-scanner/reports/server_context_latest.md
 4. 把报告贴给正在对话的 AI
 5. 让 AI 基于报告判断部署方案或排查方向
 6. 人工确认后，再执行任何修改类命令
+```
+
+遇到复杂排障时，再执行：
+
+```bash
+scan-server --full
 ```
 
 ## 与 AI 对话

@@ -16,27 +16,32 @@ fi
 
 chmod +x "$APP_DIR/scan_server_context.sh"
 
-ALIAS_LINE="alias scan-server='$APP_DIR/scan_server_context.sh && cat $APP_DIR/reports/server_context_latest.md'"
-
 touch "$PROFILE_FILE"
 
-if grep -Fq "alias scan-server=" "$PROFILE_FILE"; then
-  echo "scan-server alias already exists in $PROFILE_FILE"
-else
-  {
-    echo ""
-    echo "# Server Context Scanner"
-    echo "$ALIAS_LINE"
-  } >> "$PROFILE_FILE"
-  echo "Added scan-server alias to $PROFILE_FILE"
-fi
+sed -i '/^alias scan-server=/d' "$PROFILE_FILE"
+sed -i '/^# Server Context Scanner$/d' "$PROFILE_FILE"
+sed -i '/^scan-server() {$/,/^# End Server Context Scanner$/d' "$PROFILE_FILE"
+
+{
+  echo ""
+  echo "# Server Context Scanner"
+  echo "scan-server() {"
+  echo "  \"$APP_DIR/scan_server_context.sh\" \"\$@\" && cat \"$APP_DIR/reports/server_context_latest.md\""
+  echo "}"
+  echo "# End Server Context Scanner"
+} >> "$PROFILE_FILE"
+
+echo "Installed scan-server function to $PROFILE_FILE"
 
 echo ""
 echo "Installed Server Context Scanner to:"
 echo "$APP_DIR"
 echo ""
-echo "To activate the alias in the current shell, run:"
+echo "To activate the function in the current shell, run:"
 echo "source $PROFILE_FILE"
 echo ""
 echo "Then scan the server with:"
 echo "scan-server"
+echo ""
+echo "For a detailed diagnostic report, run:"
+echo "scan-server --full"
