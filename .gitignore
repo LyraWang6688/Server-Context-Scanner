@@ -1,3 +1,6 @@
 reports/server_context_*.md
 !reports/.gitkeep
-
+__pycache__/
+*.pyc
+.venv/
+venv/

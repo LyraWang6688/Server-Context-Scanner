@@ -121,6 +121,82 @@ cat ~/server-context-scanner/reports/server_context_latest.md
 cat ~/server-context-scanner/reports/server_context_latest.md
 ```
 
+## Web UI
+
+如果你希望跨设备使用，可以启动 Web UI。Web UI 提供按钮触发扫描、一键复制报告、下载 Markdown 和清空页面。
+
+安装依赖：
+
+```bash
+cd ~/server-context-scanner
+python3 -m pip install -r requirements.txt
+```
+
+本机启动：
+
+```bash
+SERVER_CONTEXT_WEB_HOST=127.0.0.1 SERVER_CONTEXT_WEB_PORT=8765 python3 web_app.py
+```
+
+打开：
+
+```text
+http://127.0.0.1:8765
+```
+
+如需增加应用层 Token：
+
+```bash
+SERVER_CONTEXT_WEB_TOKEN='替换成强随机字符串' python3 web_app.py
+```
+
+### PM2 启动示例
+
+```bash
+cd ~/server-context-scanner
+SERVER_CONTEXT_WEB_HOST=127.0.0.1 SERVER_CONTEXT_WEB_PORT=8765 \
+pm2 start web_app.py --name server-context-scanner-web --interpreter python3
+```
+
+### 跨设备访问建议
+
+跨设备访问时，不建议直接暴露 Flask 服务。推荐：
+
+```text
+浏览器
+  ↓ HTTPS
+Nginx + Basic Auth
+  ↓
+127.0.0.1:8765 Flask Web UI
+```
+
+Nginx 反向代理示例：
+
+```nginx
+server {
+    listen 80;
+    server_name scanner.example.com;
+
+    auth_basic "Server Context Scanner";
+    auth_basic_user_file /etc/nginx/.htpasswd-server-context-scanner;
+
+    location / {
+        proxy_pass http://127.0.0.1:8765;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+```
+
+上线前建议：
+
+- 使用 HTTPS。
+- 启用 Basic Auth 或 `SERVER_CONTEXT_WEB_TOKEN`。
+- 不要开放任意命令输入。
+- Flask 服务只监听 `127.0.0.1`。
+
 ## 报告内容
 
 默认精简报告会包含：

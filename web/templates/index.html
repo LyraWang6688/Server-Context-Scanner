@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Server Context Scanner</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+  </head>
+  <body>
+    <main class="shell">
+      <section class="hero" aria-labelledby="page-title">
+        <div>
+          <p class="eyebrow">AI 运维上下文控制台</p>
+          <h1 id="page-title">Server Context Scanner</h1>
+          <p class="lede">点击按钮扫描服务器现状，一键复制 Markdown 报告给正在对话的 AI。</p>
+        </div>
+        <div class="guard-card" aria-label="安全边界">
+          <span class="guard-dot"></span>
+          <div>
+            <strong>只读扫描</strong>
+            <p>后端只执行固定脚本，不提供任意命令输入。</p>
+          </div>
+        </div>
+      </section>
+
+      {% if token_required %}
+      <section class="token-panel" aria-label="访问 Token">
+        <label for="tokenInput">访问 Token</label>
+        <input id="tokenInput" type="password" autocomplete="off" placeholder="输入 SERVER_CONTEXT_WEB_TOKEN" />
+        <button id="saveTokenBtn" type="button" class="ghost-button">保存到本浏览器</button>
+      </section>
+      {% endif %}
+
+      <section class="toolbar" aria-label="扫描操作">
+        <button id="scanSummaryBtn" type="button" class="primary-button">生成精简报告</button>
+        <button id="scanFullBtn" type="button" class="secondary-button">生成完整报告</button>
+        <button id="copyBtn" type="button" class="ghost-button">复制报告</button>
+        <a id="downloadLink" class="ghost-link" href="/download/latest">下载 Markdown</a>
+        <button id="clearBtn" type="button" class="danger-button">清空</button>
+      </section>
+
+      <section class="status-grid" aria-label="报告状态">
+        <article class="metric-card">
+          <span>状态</span>
+          <strong id="statusText">等待扫描</strong>
+        </article>
+        <article class="metric-card">
+          <span>模式</span>
+          <strong id="modeText">-</strong>
+        </article>
+        <article class="metric-card">
+          <span>行数</span>
+          <strong id="lineCountText">0</strong>
+        </article>
+        <article class="metric-card">
+          <span>字符数</span>
+          <strong id="charCountText">0</strong>
+        </article>
+      </section>
+
+      <section class="report-panel" aria-label="报告内容">
+        <div class="report-header">
+          <div>
+            <h2>Markdown 报告</h2>
+            <p>复制按钮固定在上方，避免长报告手动拖选。</p>
+          </div>
+          <span id="generatedAtText" class="timestamp">尚未生成</span>
+        </div>
+        <textarea id="reportOutput" spellcheck="false" readonly placeholder="点击“生成精简报告”后，报告会显示在这里。"></textarea>
+      </section>
+
+      <section class="notes" aria-label="使用提示">
+        <p>建议默认使用精简报告；当 AI 明确说明证据不足时，再生成完整报告。</p>
+        <p>公网访问时请务必通过 Nginx HTTPS + Basic Auth 或 Token 保护。</p>
+      </section>
+    </main>
+
+    <script src="{{ url_for('static', filename='app.js') }}"></script>
+  </body>
+</html>
