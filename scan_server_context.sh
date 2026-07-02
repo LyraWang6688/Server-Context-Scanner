@@ -71,6 +71,11 @@ safe_project_dirs() {
       -name "ecosystem.config.js" \
     \) \
     -not -path "*/node_modules/*" \
+    -not -path "*/.next/*" \
+    -not -path "*/dist/*" \
+    -not -path "*/build/*" \
+    -not -path "*/out/*" \
+    -not -path "*/coverage/*" \
     -not -path "*/.cache/*" \
     -not -path "*/reports/*" \
     -not -path "*/.npm/*" \
