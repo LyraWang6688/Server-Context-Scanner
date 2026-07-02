@@ -4,9 +4,11 @@ from __future__ import annotations
 
 import os
 import subprocess
+import sys
+import threading
 from datetime import datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, TypeAlias
 
 from flask import Flask, Response, jsonify, render_template, request, send_file
 
@@ -16,6 +18,8 @@ SCRIPT_PATH = APP_DIR / "scan_server_context.sh"
 REPORT_PATH = APP_DIR / "reports" / "server_context_latest.md"
 SCAN_TIMEOUT_SECONDS = int(os.environ.get("SERVER_CONTEXT_SCAN_TIMEOUT", "120"))
 WEB_TOKEN = os.environ.get("SERVER_CONTEXT_WEB_TOKEN", "").strip()
+SCAN_LOCK = threading.Lock()
+AuthResult: TypeAlias = tuple[bool, Response | tuple[Response, int] | None]
 
 app = Flask(
     __name__,
@@ -24,15 +28,15 @@ app = Flask(
 )
 
 
-def require_token_if_configured() -> tuple[bool, Response | None]:
+def require_token_if_configured() -> AuthResult:
     if not WEB_TOKEN:
         return True, None
 
-    supplied = request.headers.get("X-Scanner-Token", "") or request.args.get("token", "")
+    supplied = request.headers.get("X-Scanner-Token", "")
     if supplied == WEB_TOKEN:
         return True, None
 
-    return False, jsonify({"ok": False, "error": "Unauthorized"})
+    return False, (jsonify({"ok": False, "error": "Unauthorized"}), 401)
 
 
 def read_latest_report() -> str:
@@ -96,19 +100,20 @@ def scan() -> Response:
     if mode == "full":
         command.append("--full")
 
-    try:
-        result = subprocess.run(
-            command,
-            cwd=str(APP_DIR),
-            capture_output=True,
-            text=True,
-            timeout=SCAN_TIMEOUT_SECONDS,
-            check=False,
-        )
-    except subprocess.TimeoutExpired:
-        return jsonify({"ok": False, "error": f"Scan timed out after {SCAN_TIMEOUT_SECONDS}s."}), 504
+    with SCAN_LOCK:
+        try:
+            result = subprocess.run(
+                command,
+                cwd=str(APP_DIR),
+                capture_output=True,
+                text=True,
+                timeout=SCAN_TIMEOUT_SECONDS,
+                check=False,
+            )
+        except subprocess.TimeoutExpired:
+            return jsonify({"ok": False, "error": f"Scan timed out after {SCAN_TIMEOUT_SECONDS}s."}), 504
 
-    report = read_latest_report()
+        report = read_latest_report()
     if result.returncode != 0:
         return (
             jsonify(
@@ -155,4 +160,11 @@ def download_latest() -> Response:
 if __name__ == "__main__":
     host = os.environ.get("SERVER_CONTEXT_WEB_HOST", "127.0.0.1")
     port = int(os.environ.get("SERVER_CONTEXT_WEB_PORT", "8765"))
+    if host in {"0.0.0.0", "::"} and not WEB_TOKEN:
+        print(
+            "WARNING: Server Context Scanner Web UI is binding to a public interface "
+            "without SERVER_CONTEXT_WEB_TOKEN. Use Nginx Basic Auth or set a strong token "
+            "before exposing this service.",
+            file=sys.stderr,
+        )
     app.run(host=host, port=port)

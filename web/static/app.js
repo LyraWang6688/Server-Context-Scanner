@@ -106,9 +106,40 @@ function clearReport() {
   updateStatus("已清空", "neutral");
 }
 
-function updateDownloadLink() {
-  const token = getToken();
-  els.downloadLink.href = token ? `/download/latest?token=${encodeURIComponent(token)}` : "/download/latest";
+async function downloadLatest(event) {
+  event.preventDefault();
+  updateStatus("正在准备下载...", "working");
+
+  try {
+    const response = await fetch("/download/latest", {
+      headers: authHeaders(),
+    });
+    if (!response.ok) {
+      let message = "下载失败";
+      try {
+        const data = await response.json();
+        message = data.error || message;
+      } catch {
+        // Keep the generic message when the response is not JSON.
+      }
+      throw new Error(message);
+    }
+
+    const blob = await response.blob();
+    const objectUrl = URL.createObjectURL(blob);
+    const tempLink = document.createElement("a");
+    const disposition = response.headers.get("Content-Disposition") || "";
+    const matched = disposition.match(/filename="?([^"]+)"?/i);
+    tempLink.href = objectUrl;
+    tempLink.download = matched?.[1] || "server_context_latest.md";
+    document.body.appendChild(tempLink);
+    tempLink.click();
+    tempLink.remove();
+    URL.revokeObjectURL(objectUrl);
+    updateStatus("下载已开始", "success");
+  } catch (error) {
+    updateStatus(error.message || "下载失败", "error");
+  }
 }
 
 function initTokenPanel() {
@@ -117,10 +148,8 @@ function initTokenPanel() {
   }
 
   els.tokenInput.value = getToken();
-  updateDownloadLink();
   els.saveTokenBtn.addEventListener("click", () => {
     localStorage.setItem(tokenStorageKey, els.tokenInput.value.trim());
-    updateDownloadLink();
     updateStatus("Token 已保存到本浏览器", "success");
   });
 }
@@ -129,6 +158,6 @@ els.scanSummaryBtn.addEventListener("click", () => scan("summary"));
 els.scanFullBtn.addEventListener("click", () => scan("full"));
 els.copyBtn.addEventListener("click", copyReport);
 els.clearBtn.addEventListener("click", clearReport);
+els.downloadLink.addEventListener("click", downloadLatest);
 
 initTokenPanel();
-updateDownloadLink();

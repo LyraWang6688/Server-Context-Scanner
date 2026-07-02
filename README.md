@@ -150,6 +150,8 @@ http://127.0.0.1:8765
 SERVER_CONTEXT_WEB_TOKEN='替换成强随机字符串' python3 web_app.py
 ```
 
+启用 Token 后，前端会通过 `X-Scanner-Token` 请求头调用 API 和下载报告，避免把 Token 放在 URL query 中。
+
 ### PM2 启动示例
 
 ```bash
@@ -196,6 +198,7 @@ server {
 - 启用 Basic Auth 或 `SERVER_CONTEXT_WEB_TOKEN`。
 - 不要开放任意命令输入。
 - Flask 服务只监听 `127.0.0.1`。
+- 如果手动设置 `SERVER_CONTEXT_WEB_HOST=0.0.0.0` 且未设置 Token，服务启动时会打印安全警告；不建议直接公网暴露 Flask。
 
 ## 报告内容
 
