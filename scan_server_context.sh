@@ -209,7 +209,7 @@ write_nginx_routes_summary() {
     routes="Nginx not found."
   else
     routes="$(
-      find /etc/nginx/sites-enabled /etc/nginx/conf.d -type f -print 2>/dev/null | sort | while IFS= read -r file; do
+      find -L /etc/nginx/sites-enabled /etc/nginx/conf.d -type f -print 2>/dev/null | sort | while IFS= read -r file; do
         [ -f "$file" ] || continue
         awk -v file="$file" '
           /^[[:space:]]*#/ { next }

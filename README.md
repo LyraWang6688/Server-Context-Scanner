@@ -217,7 +217,7 @@ server {
 - 疑似项目识别：项目路径、Git 状态、关键文件、运行方式线索。
 - package.json 摘要：`name`、`version`、关键 `scripts`、隐藏脚本数量、依赖数量、框架线索。
 - 敏感文件：只列 `.env*` 文件名，不读取内容。
-- Nginx 入口：逐文件解析并忽略注释行，精简为 `server_name -> proxy_pass`。
+- Nginx 入口：逐文件解析并跟随 `sites-enabled` 符号链接，忽略注释行，精简为 `server_name -> proxy_pass`。
 - 快速风险信号：磁盘、内存、端口冲突、Nginx 配置注意事项。
 - AI 阅读说明：提醒 AI 严格基于报告证据分析。
 - 为减少 AI 上下文占用，默认精简报告只展示命令标题和输出，不展示完整执行命令。
