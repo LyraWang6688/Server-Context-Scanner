@@ -33,6 +33,7 @@ server-context-scanner/
 ├── scan_server_context.sh
 ├── install.sh
 ├── ai_prompt_template.md
+├── projects.yml.example
 ├── reports/
 │   ├── server_context_YYYYMMDD_HHMMSS.md
 │   └── server_context_latest.md
@@ -127,6 +128,49 @@ cat ~/server-context-scanner/reports/server_context_latest.md
 cat ~/server-context-scanner/reports/server_context_latest.md
 ```
 
+## 项目注册表
+
+`projects.yml` 是一份人工维护的项目注册表，用来补充自动扫描无法判断的业务信息，例如项目名、域名、端口、运行方式和备注。
+
+仓库提供模板文件：
+
+```bash
+cp projects.yml.example projects.yml
+nano projects.yml
+```
+
+真实的 `projects.yml` 已被 `.gitignore` 忽略，默认不会提交到 GitHub，适合保存服务器本地的业务备注。
+
+示例：
+
+```yaml
+projects:
+  - name: ReadInsight
+    path: /opt/readinsight
+    domain: readinsight.bamamei.online
+    port: 3000
+    runtime: docker
+    container: readinsight-web
+    repo: https://github.com/winnie6688/ReadInsight.git
+    status: production
+    notes: 阅读分析 Web 应用，Nginx 反代到 127.0.0.1:3000。
+```
+
+支持字段：
+
+- `name`：项目名称。
+- `path`：服务器上的项目目录。
+- `domain`：公网域名，如有。
+- `port`：宿主机端口或内部服务端口。
+- `runtime`：`pm2`、`docker`、`docker-compose`、`systemd` 或 `manual`。
+- `pm2_name`：PM2 应用名，如适用。
+- `container`：Docker 容器名，如适用。
+- `repo`：Git 仓库地址。
+- `status`：`production`、`staging`、`inactive` 或 `unknown`。
+- `notes`：简短业务说明或运维备注。
+
+当 `projects.yml` 存在时，默认 summary 报告会增加 `Registered Projects` 区块；如果不存在，扫描器仍会正常运行。
+
 ## Web UI
 
 如果你希望跨设备使用，可以启动 Web UI。Web UI 提供按钮触发扫描、一键复制报告、下载 Markdown 和清空页面。
@@ -214,6 +258,7 @@ server {
 - 运行环境：Node、npm、npx、Git、Python、PM2、Docker、systemd、Nginx。
 - 端口占用：常见端口快速检查。
 - 运行服务：PM2 应用、Docker 容器、Nginx 路由摘要。
+- 项目注册表：读取 `projects.yml`，输出人工维护的项目业务信息。
 - 疑似项目识别：项目路径、Git 状态、关键文件、运行方式线索。
 - package.json 摘要：`name`、`version`、关键 `scripts`、隐藏脚本数量、依赖数量、框架线索。
 - 敏感文件：只列 `.env*` 文件名，不读取内容。

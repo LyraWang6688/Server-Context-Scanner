@@ -1,0 +1,40 @@
+projects:
+  - name: ReadInsight
+    path: /opt/readinsight
+    domain: readinsight.bamamei.online
+    port: 3000
+    runtime: docker
+    container: readinsight-web
+    repo: https://github.com/winnie6688/ReadInsight.git
+    status: production
+    notes: 阅读分析 Web 应用，Nginx 反代到 127.0.0.1:3000。
+
+  - name: Meeting Analysis
+    path: /home/ubuntu/meeting-analysis
+    domain: meeting.bamamei.online
+    port: 3011
+    runtime: docker
+    container: meeting-analysis
+    repo: https://github.com/LyraWang6688/Teaming-Bot.git
+    status: production
+    notes: 会议分析系统，宿主机 3011 映射到容器 3000。
+
+  - name: Box2Bitable API
+    path: /opt/box2bitable/server
+    domain: api.bamamei.online
+    port: 5000
+    runtime: pm2
+    pm2_name: box2bitable-server
+    repo: https://github.com/LyraWang6688/box2bitable.git
+    status: production
+    notes: 飞书多维表格同步 API，PM2 托管，Nginx 反代到 127.0.0.1:5000。
+
+  - name: Server Context Scanner
+    path: /home/ubuntu/server-context-scanner
+    domain: scanner.bamamei.online
+    port: 8765
+    runtime: pm2
+    pm2_name: server-context-scanner-web
+    repo: https://github.com/LyraWang6688/Server-Context-Scanner.git
+    status: production
+    notes: 服务器上下文扫描器 Web UI，Nginx HTTPS + Basic Auth 保护。

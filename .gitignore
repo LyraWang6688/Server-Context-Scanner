@@ -1,5 +1,6 @@
 reports/server_context_*.md
 !reports/.gitkeep
+projects.yml
 __pycache__/
 *.pyc
 .venv/

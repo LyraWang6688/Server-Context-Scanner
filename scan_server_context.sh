@@ -252,6 +252,93 @@ write_summary_services() {
   write_nginx_routes_summary
 }
 
+write_registered_projects() {
+  local registry="$APP_DIR/projects.yml"
+
+  section "5. Registered Projects"
+
+  if [ ! -f "$registry" ]; then
+    write "No \`projects.yml\` registry found. Copy \`projects.yml.example\` to \`projects.yml\` to add manual project metadata."
+    write ""
+    return
+  fi
+
+  if ! command -v python3 >/dev/null 2>&1; then
+    write "Python not found; cannot parse projects.yml."
+    write ""
+    return
+  fi
+
+  python3 - "$registry" >> "$REPORT_FILE" <<'PY' || echo "Cannot parse projects.yml." >> "$REPORT_FILE"
+import re
+import sys
+
+registry_path = sys.argv[1]
+fields = [
+    ("path", "Path"),
+    ("domain", "Domain"),
+    ("port", "Port"),
+    ("runtime", "Runtime"),
+    ("pm2_name", "PM2"),
+    ("container", "Container"),
+    ("repo", "Repo"),
+    ("status", "Status"),
+    ("notes", "Notes"),
+]
+
+def clean_value(value):
+    value = value.strip()
+    if value.startswith(("'", '"', "`")) and value.endswith(("'", '"', "`")) and len(value) >= 2:
+        value = value[1:-1]
+    return value.strip()
+
+projects = []
+current = None
+
+with open(registry_path, encoding="utf-8") as fh:
+    for raw in fh:
+        line = raw.rstrip("\n")
+        if not line.strip() or line.lstrip().startswith("#"):
+            continue
+        line = re.sub(r"\s+#.*$", "", line)
+        if line.strip() == "projects:":
+            continue
+
+        item_match = re.match(r"^\s*-\s*(?:(\w+):\s*(.*))?$", line)
+        if item_match:
+            if current:
+                projects.append(current)
+            current = {}
+            key, value = item_match.groups()
+            if key:
+                current[key] = clean_value(value or "")
+            continue
+
+        field_match = re.match(r"^\s+(\w+):\s*(.*)$", line)
+        if field_match and current is not None:
+            key, value = field_match.groups()
+            current[key] = clean_value(value)
+
+if current:
+    projects.append(current)
+
+if not projects:
+    print("No registered projects found in projects.yml.")
+    sys.exit(0)
+
+for project in projects:
+    name = project.get("name") or project.get("path") or "Unnamed Project"
+    print(f"### {name}")
+    print()
+    for key, label in fields:
+        value = project.get(key)
+        if value:
+            print(f"- {label}: {value}")
+    print()
+PY
+  write ""
+}
+
 write_package_summary() {
   local dir="$1"
   project_cmd "package.json compact summary" "$dir" "python3 -c 'import json; p=json.load(open(\"package.json\", encoding=\"utf-8\")); deps=p.get(\"dependencies\") or {}; dev=p.get(\"devDependencies\") or {}; all_deps={**deps, **dev}; keys=[\"next\",\"react\",\"express\",\"vite\",\"vue\",\"nuxt\",\"koa\",\"fastify\",\"nestjs\",\"drizzle-orm\",\"prisma\",\"pg\",\"mysql2\",\"mongoose\",\"typescript\"]; exact={\"dev\",\"start\",\"build\",\"test\",\"lint\",\"ts-check\",\"serve\",\"prod\",\"production\",\"deploy\",\"worker\",\"preview\"}; tokens=[\"serve\",\"prod\",\"deploy\",\"worker\",\"preview\"]; raw_scripts=p.get(\"scripts\") or {}; scripts={k:v for k,v in raw_scripts.items() if k in exact or k.startswith((\"db:\",\"pm2:\")) or any(t in k.lower() for t in tokens)}; summary={\"name\":p.get(\"name\"),\"version\":p.get(\"version\"),\"scripts\":scripts,\"hiddenScriptsCount\":max(len(raw_scripts)-len(scripts),0),\"dependenciesCount\":len(deps),\"devDependenciesCount\":len(dev),\"frameworkHints\":[k for k in keys if k in all_deps]}; print(json.dumps(summary, ensure_ascii=False, indent=2))' 2>/dev/null || echo 'Cannot parse package.json'"
@@ -298,7 +385,7 @@ write_project_summary() {
 }
 
 write_summary_projects() {
-  section "5. Detected Projects"
+  section "6. Detected Projects"
 
   local project_dirs
   project_dirs="$(safe_project_dirs || true)"
@@ -316,7 +403,7 @@ write_summary_projects() {
 }
 
 write_summary_risks() {
-  section "6. Quick Risk Signals"
+  section "7. Quick Risk Signals"
   write "- Disk warning threshold: check root disk use above 80%."
   write "- Memory warning threshold: check low available memory or heavy swap use."
   write "- Port conflicts: occupied common ports are listed in section 3."
@@ -347,6 +434,7 @@ scan_summary() {
   write_summary_runtime
   write_summary_ports
   write_summary_services
+  write_registered_projects
   write_summary_projects
   write_summary_risks
   write_ai_instructions

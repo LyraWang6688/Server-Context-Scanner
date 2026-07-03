@@ -4,7 +4,7 @@
 
 ## 1. 增加 `projects.yml` 项目注册表
 
-优先级：中
+状态：已实现
 
 目标：增加一份人工维护的项目注册表，让扫描报告不仅能展示自动发现的信息，还能说明每个项目的业务含义、域名、端口、运行方式和备注。
 
@@ -23,11 +23,11 @@
 
 验收标准：
 
-- 增加一个示例 `projects.yml` 模板。
+- 已增加示例 `projects.yml.example` 模板。
 - 当 `projects.yml` 存在时，扫描器可以读取它。
-- Summary 报告增加 `Registered Projects` 区块。
+- Summary 报告已增加 `Registered Projects` 区块。
 - 缺少 `projects.yml` 时，扫描器仍能正常运行。
-- README 补充项目注册表的维护方式。
+- README 已补充项目注册表的维护方式。
 
 ## 2. 修复 Web UI 与终端 Docker 权限差异
 
