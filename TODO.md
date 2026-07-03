@@ -208,3 +208,57 @@ docker system prune
 - Web UI 增加“生成健康检查报告”按钮。
 - 报告只读，不自动清理。
 - 报告能告诉用户“为什么磁盘高、建议先清理什么、对应命令是什么”。
+
+## 6. 增加依赖环境摘要与依赖检查报告
+
+优先级：中
+
+目标：让 AI 更清楚服务器上可用的包管理器、全局 CLI 和语言工具，辅助判断部署方式和缺失依赖；同时避免默认 summary 因全量依赖列表变得过长。
+
+默认 summary 建议增加：
+
+- 包管理器摘要：`npm`、`npx`、`pnpm`、`yarn`、`bun`。
+- 常用全局 CLI 摘要：`pm2`、`tsx`、`typescript/tsc`、`next`、`vite`、`drizzle-kit`、`prisma`。
+- Python 工具摘要：`python3`、`pip3`、`venv` 可用性。
+
+完整模式 `--full` 可增加：
+
+```bash
+npm list -g --depth=0
+pnpm list -g --depth=0
+yarn global list
+pip3 list
+```
+
+未来可选命令：
+
+```bash
+scan-server --dependencies
+```
+
+检查范围：
+
+- 服务器是否支持 `pnpm install`、`npm install`、`yarn install`、`bun install`。
+- 是否已有常见部署 CLI，例如 `pm2`、`tsx`、`tsc`、`next`、`vite`。
+- Node 项目需要的包管理器和服务器实际安装情况是否匹配。
+- Python 项目是否具备 `python3`、`pip3`、`venv`。
+- 全局依赖列表仅在详细模式或依赖报告中展示，默认 summary 只展示关键摘要。
+
+输出内容：
+
+- 关键依赖是否存在。
+- 版本信息。
+- 缺失项提醒。
+- 建议安装命令，但不自动安装。
+
+安全要求：
+
+- 不自动安装任何依赖。
+- 不输出过长的全局依赖列表到默认 summary。
+- `apt list --installed` 默认不输出，避免报告过长；如未来需要，只放到 full 或专门依赖报告。
+
+验收标准：
+
+- 默认 summary 能看到关键包管理器和常用 CLI 是否可用。
+- `--full` 或 `--dependencies` 能查看更详细的全局依赖列表。
+- Web UI 可选增加“生成依赖环境报告”按钮。
