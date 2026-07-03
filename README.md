@@ -13,6 +13,35 @@ Server Context Scanner 是一个人为触发的服务器上下文采集器。
 - 项目交接前，生成一份当前服务器上下文报告。
 - 与 AI 对话时，减少重复手动执行运维命令。
 
+## 项目边界
+
+当前版本主要面向单台 Ubuntu/Linux 服务器。
+
+正式支持：
+
+- Ubuntu Server 20.04 / 22.04 / 24.04。
+- Debian 系 Linux 服务器。
+- 使用 Bash、systemd、Nginx、Docker、PM2、Node、Python 的常见 Web 应用服务器。
+- 通过 SSH 执行 `scan-server`，或在服务器本机运行 Flask Web UI 后通过 Nginx 反向代理访问。
+
+暂未正式支持：
+
+- Windows Server。
+- macOS 服务器或 macOS 本机开发环境扫描。
+- Kubernetes 集群级别扫描。
+- 多服务器集中监控。
+- 云厂商资源扫描，例如安全组、负载均衡、RDS、对象存储。
+
+不是本项目目标：
+
+- 自动部署平台。
+- 企业级监控系统。
+- 安全审计工具。
+- 云资源管理工具。
+- 自动修复、自动停止服务或自动重启服务。
+
+如果未来需要支持 Windows 或 macOS，建议新增独立采集器，例如 `scan_windows_context.ps1` 或 `scan_macos_context.sh`，不要把当前 Linux Bash 脚本硬改成跨平台脚本。
+
 ## 安全边界
 
 脚本遵守以下原则：
